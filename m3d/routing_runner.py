@@ -23,15 +23,17 @@ def bbox_order(instance: Instance) -> tuple[int, ...]:
 
 
 def drive_episode(env: RoutingEnv, *, progress=None) -> dict:
-    """Each iteration selects exactly one currently eligible net externally."""
+    """Bbox selects initial nets, then problematic seeds for joint repair."""
     order = bbox_order(env.observation()["instance"])
     failures = []
     while eligible := env.eligible_net_ids():
         allowed = set(eligible)
         nid = next(nid for nid in order if nid in allowed)
         result = env.step(nid)
-        if result.diagnostics["engine_status"] not in ("success", "not_called"):
-            failures.append(result.diagnostics)
+        diagnostics = result.diagnostics
+        calls = ([call for candidate in diagnostics["candidates"] for call in candidate["calls"]]
+                 if "group_net_ids" in diagnostics else [diagnostics])
+        failures.extend(call for call in calls if call["engine_status"] not in ("success", "not_called"))
         if progress is not None:
             progress(result)
     state = env.observation()
@@ -42,6 +44,13 @@ def drive_episode(env: RoutingEnv, *, progress=None) -> dict:
         "runtime_s": state["budget"]["elapsed_s"],
         "passes": state["pass_number"], "passes_completed": state["passes_completed"],
         "engine_calls": state["budget"]["engine_calls"],
+        "group_repairs": state["group_repairs"],
+        "accepted_group_repairs": state["accepted_group_repairs"],
+        "group_sizes_used": state["group_sizes_used"],
+        "group_repair_log": list(env._repair_log),
+        "remaining_conflicts": len(state["conflict_vertices"]) + len(state["conflict_edges"]),
+        "total_overuse": sum(len(ns)-1 for conflicts in (state["conflict_vertices"], state["conflict_edges"])
+                             for ns in conflicts.values()),
         "expansions_charged": state["budget"]["expansions_charged"],
         "termination_reason": state["termination_reason"],
         "missing_net_ids": list(state["missing_net_ids"]),

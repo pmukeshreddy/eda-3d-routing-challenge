@@ -1,5 +1,9 @@
 # Block 2 implementation plan
 
+Historical single-net implementation record. Superseded by
+[the coordinated repair plan](BLOCK_2_GROUP_PLAN.md) and
+[the current environment](ROUTING_ENV.md).
+
 The user's Block 2 specification is the design authority. Work stays in this
 checkout, without commits, worktrees, upstream suite runs, or changes to the
 five-block roadmap. Implementation uses the planning, inline execution, TDD,

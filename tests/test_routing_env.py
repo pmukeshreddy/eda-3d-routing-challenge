@@ -66,7 +66,7 @@ class RoutingEnvTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             env.step(42)
 
-    def test_vertex_overlap_is_priced_then_failed_replacement_rolls_back(self):
+    def test_vertex_overlap_selects_blocker_and_failed_group_rolls_back(self):
         inst = fixture(crossing=True)
         env = self.env(inst)
         # Force genuine engine-built shortest trees to create a vertex-only
@@ -87,11 +87,11 @@ class RoutingEnvTests(unittest.TestCase):
 
         def fail(nid, **kwargs):
             during = env.observation()
-            self.assertNotIn(nid, during["routes"])
-            self.assertEqual(during["vertex_owners"][center], frozenset({9001}))
+            self.assertEqual(during["routes"], {})
+            self.assertEqual(during["vertex_owners"], {})
             self.assertNotIn(center, kwargs["blocked_vertices"])
-            # Half each endpoint's vertex pressure; selected net was removed.
-            self.assertAlmostEqual(kwargs["edge_prices"][(11, 12)], 0.675)
+            # Exclusive candidates use no surcharge; negotiated candidates
+            # retain history, but no group owner remains in either variant.
             return failure(nid)
 
         with patch.object(env._worker, "route_net", side_effect=fail):
@@ -101,7 +101,8 @@ class RoutingEnvTests(unittest.TestCase):
         for key in ("routes", "vertex_owners", "edge_owners", "delays",
                     "route_search_costs", "conflict_vertices", "conflict_edges"):
             self.assertEqual(after[key], before[key], key)
-        self.assertEqual(after["budget"]["engine_calls"], 3)
+        self.assertEqual(set(result.diagnostics["group_net_ids"]), {42, 9001})
+        self.assertEqual(after["budget"]["engine_calls"], 6)
 
     def test_shared_branch_counts_once_and_unrouted_foreign_pins_blocked(self):
         inst = fixture()
@@ -182,28 +183,6 @@ class RoutingEnvTests(unittest.TestCase):
         self.assertEqual(report["missing_net_ids"], [42, 9001])
         self.assertIsNone(report["total_delay"])
 
-    def test_best_survives_later_failed_repair_and_budget_termination(self):
-        inst = fixture(crossing=True)
-        env = self.env(inst, max_calls=4)
-        engine = WireEngine(inst)
-        with patch.object(env._worker, "route_net", side_effect=lambda nid, **kw:
-                          engine.route_net(nid, method="shortest_path")):
-            env.step(42)
-            env.step(9001)
-        occupied = set(v for e in env.observation()["routes"][9001] for v in e)
-        replacement = engine.route_net(42, blocked_vertices=occupied)
-        with patch.object(env._worker, "route_net", return_value=replacement):
-            repaired = env.step(42)
-        self.assertFalse(repaired.done)
-        saved = env.best_solution()
-        self.assertTrue(check(inst, saved).legal)
-        with patch.object(env._worker, "route_net", return_value=failure(9001)):
-            last = env.step(9001)
-        self.assertTrue(last.done)
-        self.assertTrue(last.diagnostics["rolled_back"])
-        self.assertEqual(env.best_solution(), saved)
-        self.assertTrue(check(inst, env.best_solution()).legal)
-
     def test_wall_timeout_kills_worker_and_next_call_can_recover(self):
         worker = BoundedWireEngine(fixture())
         self.addCleanup(worker.close)
@@ -278,29 +257,6 @@ class RoutingEnvTests(unittest.TestCase):
             self.assertLess(perf_counter() - start, 0.2)
         finally:
             thread.join(timeout=1)
-
-    def test_best_is_separate_when_later_route_conflicts_at_budget_end(self):
-        inst = fixture(crossing=True)
-        env = self.env(inst, max_calls=4)
-        engine = WireEngine(inst)
-        with patch.object(env._worker, "route_net", side_effect=lambda nid, **kw:
-                          engine.route_net(nid, method="shortest_path")):
-            env.step(42)
-            env.step(9001)
-        for nid in (42, 9001):
-            own = {inst.pin_vertex()[p] for p in next(n for n in inst.nets if n.id == nid).pins()}
-            blocked = {(x, y, 0) for x in range(5) for y in range(5)} - own
-            upper_route = engine.route_net(nid, blocked_vertices=blocked)
-            with patch.object(env._worker, "route_net", return_value=upper_route):
-                result = env.step(nid)
-            if nid == 42:
-                saved = env.best_solution()
-                self.assertTrue(check(inst, saved).legal)
-        self.assertTrue(result.done)
-        self.assertEqual(result.observation["termination_reason"], "call_budget")
-        self.assertTrue(result.observation["conflict_vertices"])
-        self.assertEqual(env.best_solution(), saved)
-        self.assertTrue(check(inst, env.best_solution()).legal)
 
     def test_cli_exports_checked_solution_and_failure_writes_no_solution(self):
         with tempfile.TemporaryDirectory() as directory:

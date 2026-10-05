@@ -1,14 +1,15 @@
-"""Block 2: transactional, budgeted negotiated routing around Block 1.
+"""Block 2: budgeted, transactional multi-net repair around unchanged Block 1.
 
-An action selects one entire net/connection, including all of its sinks.
-The environment never selects another net or imports reference wires.
-See docs/ROUTING_ENV.md for observations, pass semantics and price mapping.
+Initial actions construct nets; subsequent actions select a neighborhood seed.
+Every repair removes and reconstructs the whole interacting group.
 """
 from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import asdict, dataclass
+from itertools import combinations
 import math
+import random
 from time import perf_counter
 
 from ._routing_worker import BoundedWireEngine
@@ -100,6 +101,14 @@ class RoutingEnv:
         self._pass = 1
         self._passes_completed = 0
         self._calls = self._expansions = 0
+        self._phase = "initial"
+        self._repair_failures = {nid: 0 for nid in self._nets}
+        self._group_repairs = self._accepted_repairs = 0
+        self._group_sizes = {}
+        self._repair_log = []
+        self._exhausted_seeds = set()
+        self._prepare_regions()
+        self._interactions = {}
         self._best = self._best_delay = None
         self._checker_report = None
         self._done = False
@@ -168,6 +177,12 @@ class RoutingEnv:
             "history_vertex": dict(self._h_v),
             "history_edge": dict(self._h_e),
             "present_factor": self._present,
+            "phase": self._phase,
+            "interactions": {nid: dict(scores) for nid, scores in self._interactions.items()},
+            "repair_failures": dict(self._repair_failures),
+            "group_repairs": self._group_repairs,
+            "accepted_group_repairs": self._accepted_repairs,
+            "group_sizes_used": dict(self._group_sizes),
             "eligible_net_ids": () if self._done else tuple(sorted(self._eligible)),
             "missing_net_ids": tuple(sorted(self._nets.keys() - self._routes.keys())),
             "delays": {nid: r.delay for nid, r in self._routes.items()},
@@ -205,19 +220,20 @@ class RoutingEnv:
                 owners.setdefault(resource, set()).add(nid)
         self._routes[nid] = route
 
-    def _prices(self):
+    def _prices(self, congestion=None):
+        present, h_v, h_e = congestion or (self._present, self._h_v, self._h_e)
         prices = {}
         # Native search already adds the base delay. Only send the surcharge.
-        for a, b in self._h_e.keys() | self._owners_e.keys():
+        for a, b in h_e.keys() | self._owners_e.keys():
             delay = (self._grid.via_delay if a // self._grid.wh != b // self._grid.wh
                      else self._grid.layer_delay[a // self._grid.wh])
-            prices[a, b] = delay * (self._h_e.get((a, b), 0.0)
-                                    + self._present * len(self._owners_e.get((a, b), ())))
+            prices[a, b] = delay * (h_e.get((a, b), 0.0)
+                                    + present * len(self._owners_e.get((a, b), ())))
         # Undirected edge API: split each vertex's pressure equally onto every
         # incident edge. A path's internal vertex is then charged exactly once.
-        for v in self._h_v.keys() | self._owners_v.keys():
-            pressure = 0.5 * VCONG * (self._h_v.get(v, 0.0)
-                                       + self._present * len(self._owners_v.get(v, ())))
+        for v in h_v.keys() | self._owners_v.keys():
+            pressure = 0.5 * VCONG * (h_v.get(v, 0.0)
+                                       + present * len(self._owners_v.get(v, ())))
             for neighbor, _ in self._grid.neighbors(v):
                 e = edge_key(v, neighbor)
                 prices[e] = prices.get(e, 0.0) + pressure
@@ -235,11 +251,228 @@ class RoutingEnv:
         elif self._best_delay is None or report.total_delay < self._best_delay:
             self._best, self._best_delay = deepcopy(candidate), report.total_delay
 
+    def _prepare_regions(self):
+        """Static pin bboxes and a one-vertex halo; no route search here."""
+        self._bboxes, self._spans, self._lower_delays = {}, {}, {}
+        self._region_nets = {}
+        for nid, pins in self._net_pins.items():
+            coords = [self._grid.coord(v) for v in pins]
+            lo = tuple(min(p[d] for p in coords) for d in range(3))
+            hi = tuple(max(p[d] for p in coords) for d in range(3))
+            self._bboxes[nid] = lo, hi
+            self._spans[nid] = sum(b-a for a, b in zip(lo, hi))
+            self._lower_delays[nid] = max(1, sum(
+                (abs(p[0]-coords[0][0]) + abs(p[1]-coords[0][1])) * min(self._grid.layer_delay)
+                + abs(p[2]-coords[0][2]) * self._grid.via_delay for p in coords[1:]))
+            for z in range(max(0, lo[2]-1), min(self._grid.l, hi[2]+2)):
+                for y in range(max(0, lo[1]-1), min(self._grid.h, hi[1]+2)):
+                    for x in range(max(0, lo[0]-1), min(self._grid.w, hi[0]+2)):
+                        self._region_nets.setdefault(self._grid.vid((x, y, z)), []).append(nid)
+
+    def _recompute_interactions(self):
+        scores = {nid: {} for nid in self._nets}
+
+        def add(a, b, value):
+            if a != b:
+                scores[a][b] = scores[a].get(b, 0.0) + value
+                scores[b][a] = scores[b].get(a, 0.0) + value
+
+        for conflicts in self._conflicts():
+            for owners in conflicts.values():
+                for a, b in combinations(sorted(owners), 2):
+                    add(a, b, 100.0)
+        # Occupied escape vertices next to pins are especially useful blockers.
+        for nid, pins in self._net_pins.items():
+            for pin in pins:
+                for vertex, _ in self._grid.neighbors(pin):
+                    for owner in self._owners_v.get(vertex, ()):
+                        add(nid, owner, 10.0)
+        detour = {nid: min(4.0, self._routes[nid].delay / self._lower_delays[nid])
+                  if nid in self._routes else 4.0 for nid in self._nets}
+        for vertex, owners in self._owners_v.items():
+            for nid in self._region_nets.get(vertex, ()):
+                for owner in owners:
+                    add(nid, owner, 0.1 * detour[nid] / max(1, self._spans[nid]))
+        for a, b in combinations(sorted(self._nets), 2):
+            alo, ahi = self._bboxes[a]
+            blo, bhi = self._bboxes[b]
+            overlap = math.prod(max(0, min(ahi[d]+1, bhi[d]+1)-max(alo[d]-1, blo[d]-1)+1)
+                                for d in range(3))
+            if overlap:
+                size = min(math.prod(ahi[d]-alo[d]+3 for d in range(3)),
+                           math.prod(bhi[d]-blo[d]+3 for d in range(3)))
+                add(a, b, overlap / size)
+        self._interactions = scores
+
+    def _conflict_component(self, seed):
+        adjacency = {nid: set() for nid in self._nets}
+        for conflicts in self._conflicts():
+            for owners in conflicts.values():
+                for nid in owners:
+                    adjacency[nid].update(owners - {nid})
+        component, frontier = {seed}, [seed]
+        while frontier:
+            for nid in adjacency[frontier.pop()] - component:
+                component.add(nid)
+                frontier.append(nid)
+        return component
+
+    def _select_group(self, seed):
+        stage = self._repair_failures[seed] // 2
+        component = self._conflict_component(seed)
+        target = (2, 3, 5, 8)[stage] if stage < 4 else max(len(component), 8 * 2**(stage-3))
+        target = min(len(self._nets), target)
+        group = {seed} if stage < 4 else set(component)
+        while len(group) < target:
+            choices = self._nets.keys() - group
+            # Strongest aggregate interaction with the whole growing group.
+            neighbor = max(choices, key=lambda nid: (
+                sum(self._interactions.get(nid, {}).get(other, 0.0) for other in group),
+                -nid))
+            group.add(neighbor)
+        return (seed, *sorted(group - {seed}))
+
+    def _candidate_orders(self, group):
+        """At most eight distinct orders, never factorial enumeration."""
+        conflict_strength = {nid: 0 for nid in group}
+        for conflicts in self._conflicts():
+            for owners in conflicts.values():
+                for nid in set(group) & owners:
+                    conflict_strength[nid] += len(owners)-1
+        orders = []
+
+        def add(order):
+            order = tuple(order)
+            if order not in orders and len(orders) < 8:
+                orders.append(order)
+
+        add(sorted(group, key=lambda n: (-self._spans[n], n)))
+        add(sorted(group, key=lambda n: (-len(self._nets[n].sinks), n)))
+        add(sorted(group, key=lambda n: (
+            -(self._routes[n].delay / self._lower_delays[n] if n in self._routes else math.inf),
+            -(self._routes[n].delay if n in self._routes else 0), n)))
+        add(sorted(group, key=lambda n: (-conflict_strength[n], n)))
+        base = tuple(group)
+        for shift in range(min(3, len(base))):
+            add(base[shift:] + base[:shift])
+        add(reversed(orders[0]))
+        # Deterministic variation when a neighborhood is revisited.
+        rng = random.Random(self._seed + self._group_repairs)
+        for _ in range(8):
+            shuffled = list(group)
+            rng.shuffle(shuffled)
+            add(shuffled)
+        return tuple(orders)
+
+    def _objective(self):
+        conflicts = self._conflicts()
+        return (len(self._nets.keys() - self._routes.keys()),
+                sum(len(resources) for resources in conflicts),
+                sum(len(owners)-1 for resources in conflicts for owners in resources.values()),
+                sum(route.delay for route in self._routes.values()))
+
+    def _repair_group(self, group):
+        """Rebuild complete joint candidates from one identical outside state.
+
+        Routes are immutable. Candidate mutations touch only routes/ownership;
+        penalties and the separately copied legal incumbent are read-only until
+        a winning complete candidate is committed. Work budgets never roll back.
+        """
+        group = tuple(group)
+        if not group or len(set(group)) != len(group) or not set(group) <= self._nets.keys():
+            raise ValueError("invalid repair group")
+        if len(group) < min(2, len(self._nets)):
+            raise ValueError("repair must include interacting nets together")
+        orders = self._candidate_orders(group)
+        original = {nid: self._routes[nid] for nid in group if nid in self._routes}
+        before = best_objective = self._objective()
+        best_routes = None
+        best_congestion = None
+        # Negotiated candidates can reduce congestion even when the fixed
+        # outside layout makes an entirely exclusive reconstruction impossible.
+        # All orders use the same proposed prices; rejected attempts do not
+        # mutate history or present pressure.
+        h_v, h_e = dict(self._h_v), dict(self._h_e)
+        for history, conflicts in zip((h_v, h_e), self._conflicts()):
+            for resource, owners in conflicts.items():
+                history[resource] = history.get(resource, 0.0) + 0.5 * (len(owners)-1)
+        pressure = min(1e6, max(8.0, self._present * 1.7)
+                       * 2**min(6, self._repair_failures[group[0]] // 2))
+        congestion = pressure, h_v, h_e
+        variants = (False, True) if any(before[:3]) else (True,)
+        diagnostics = {"group_net_ids": group, "before_objective": before,
+                       "candidates": [], "engine_status": "not_called"}
+        calls_before = self._calls
+        self._group_repairs += 1
+        self._group_sizes[len(group)] = self._group_sizes.get(len(group), 0) + 1
+        self._in_step = True
+
+        def clear_group():
+            for nid in group:
+                if nid in self._routes:
+                    self._remove(nid)
+
+        try:
+            for order, exclusive in ((o, e) for o in orders for e in variants):
+                self._check_budget()
+                if self._done:
+                    break
+                clear_group()
+                candidate_start = self._calls
+                candidate = {"order": order, "mode": "exclusive" if exclusive else "negotiated",
+                             "complete": False, "objective": None, "calls": []}
+                for nid in order:
+                    route, call = self._build_route(nid, exclusive=exclusive, congestion=congestion)
+                    candidate["calls"].append(call)
+                    diagnostics["engine_status"] = call["engine_status"]
+                    if route is None:
+                        break
+                    self._install(nid, route)
+                else:
+                    candidate["complete"] = True
+                    candidate["objective"] = self._objective()
+                    if candidate["objective"] < best_objective:
+                        best_objective = candidate["objective"]
+                        best_routes = {nid: self._routes[nid] for nid in group}
+                        best_congestion = None if exclusive else congestion
+                candidate["block1_calls"] = self._calls - candidate_start
+                diagnostics["candidates"].append(candidate)
+        finally:
+            # Includes time/call/expansion exhaustion halfway through a candidate.
+            clear_group()
+            for nid, route in (best_routes if best_routes is not None else original).items():
+                self._install(nid, route)
+            self._in_step = False
+        accepted = best_routes is not None
+        if accepted:
+            self._accepted_repairs += 1
+            if best_congestion is not None:
+                self._present, self._h_v, self._h_e = best_congestion
+            self._consider_snapshot()
+        diagnostics.update(accepted=accepted, route_installed=accepted, rolled_back=not accepted,
+                           after_objective=self._objective(), block1_calls=self._calls-calls_before)
+        record = {k: deepcopy(v) for k, v in diagnostics.items() if k != "candidates"}
+        record["candidates"] = [
+            {"order": c["order"], "mode": c["mode"], "complete": c["complete"],
+             "objective": c["objective"], "block1_calls": c["block1_calls"],
+             "last_status": c["calls"][-1]["engine_status"]}
+            for c in diagnostics["candidates"]]
+        self._repair_log.append(record)
+        self._recompute_interactions()
+        self._check_budget()
+        return diagnostics
+
+    def _affected_nets(self):
+        affected = set(self._nets.keys() - self._routes.keys())
+        for conflicts in self._conflicts():
+            for owners in conflicts.values():
+                affected.update(owners)
+        return affected
+
     def _end_pass(self):
         self._passes_completed += 1
-        conflicts_v, conflicts_e = self._conflicts()
-        missing = self._nets.keys() - self._routes.keys()
-        if not missing and not conflicts_v and not conflicts_e:
+        affected = self._affected_nets()
+        if not affected:
             self._finish("legal" if self._best is not None else "checker_rejected")
             return
         self._check_budget()
@@ -248,43 +481,45 @@ class RoutingEnv:
         if self._passes_completed >= self._budget.max_passes:
             self._finish("pass_budget")
             return
-        affected = set(missing)
-        for history, conflicts in ((self._h_v, conflicts_v), (self._h_e, conflicts_e)):
-            for resource, owners in conflicts.items():
-                history[resource] = history.get(resource, 0.0) + 0.5 * (len(owners) - 1)
-                affected.update(owners)
-        self._present = min(self._present * 1.7, 1e6)
-        self._eligible = affected
+        if affected <= self._exhausted_seeds:
+            self._finish("no_improvement")
+            return
+        if self._phase == "initial":
+            for history, conflicts in zip((self._h_v, self._h_e), self._conflicts()):
+                for resource, owners in conflicts.items():
+                    history[resource] = history.get(resource, 0.0) + 0.5 * (len(owners)-1)
+            self._present = min(self._present * 1.7, 1e6)
+        self._phase = "repair"
+        self._eligible = affected - self._exhausted_seeds
         self._pass += 1
+        self._recompute_interactions()
 
-    def step(self, net_id: int) -> StepResult:
-        self._require_reset()
-        # Validate before touching even pass/termination counters. In particular,
-        # bools/floats must not alias integer IDs in Python's set membership.
-        if type(net_id) is not int or net_id not in self._eligible or self._done:
-            raise ValueError(f"net is not eligible: {net_id!r}")
+    def _build_route(self, net_id, *, exclusive=False, congestion=None):
+        """The only Block 1 dispatch path; construction never repairs a net alone."""
         self._check_budget()
+        diagnostics = {"net_id": net_id, "engine_status": "not_called"}
         if self._done:
-            return StepResult(self.observation(), {"net_id": net_id, "engine_status": "not_called"}, True)
-        old = self._remove(net_id) if net_id in self._routes else None
-        installed = False
-        diagnostics = {"net_id": net_id, "pass_number": self._pass, "rolled_back": False}
+            return None, diagnostics
         allowance = min(self._budget.max_expansions_per_call,
                         self._budget.max_expansions - self._expansions)
         called = False
-        self._in_step = True
         try:
-            prices = self._prices()
+            # Outside wires stay fixed in both variants. Negotiated candidates
+            # price their occupancy; exclusive candidates hard-block it.
+            prices = {} if exclusive else self._prices(congestion)
+            blocked = {v for v, owner in self._pin_owner.items() if owner != net_id}
+            if exclusive:
+                blocked.update(self._owners_v)
             if self._remaining_seconds() <= 0:
-                raise TimeoutError("episode expired while constructing search prices")
+                raise TimeoutError("episode expired while constructing search state")
             self._calls += 1
             called = True
-            # Reserve up front: a killed worker has no trustworthy final count.
             self._expansions += allowance
             result = self._worker.route_net(
                 net_id, timeout_s=min(self._budget.max_call_seconds, self._remaining_seconds()),
-                blocked_vertices=tuple(v for v, owner in self._pin_owner.items() if owner != net_id),
-                blocked_edges=(), edge_prices=prices, method=self.method,
+                blocked_vertices=tuple(sorted(blocked)),
+                blocked_edges=tuple(sorted(self._owners_e)) if exclusive else (),
+                edge_prices=prices, method=self.method,
                 seed=(self._seed + self._calls - 1) % (2**64), max_expansions=allowance)
             self._expansions -= allowance - result.expansions
             diagnostics.update(engine_status=result.status, expansions=result.expansions,
@@ -295,21 +530,46 @@ class RoutingEnv:
             if result.status == "success" and self._remaining_seconds() > 0:
                 edges = frozenset(edge_key(self._grid.vid(a), self._grid.vid(b)) for a, b in result.edges)
                 vertices = frozenset(v for e in edges for v in e) | frozenset(self._net_pins[net_id])
-                route = _Route(tuple(result.edges), vertices, edges, result.total_delay, result.resource_cost)
-                self._install(net_id, route)
-                installed = True
+                return _Route(tuple(result.edges), vertices, edges,
+                              result.total_delay, result.resource_cost), diagnostics
         except (TimeoutError, RuntimeError, ValueError, OverflowError) as exc:
             diagnostics.update(engine_status="timeout" if isinstance(exc, TimeoutError) else "error",
                                error=str(exc), expansions_charged=allowance if called else 0)
-        finally:
-            if not installed and old is not None:
-                self._install(net_id, old)
-                diagnostics["rolled_back"] = True
-            self._in_step = False
-        diagnostics["route_installed"] = installed
-        self._eligible.remove(net_id)
-        if installed:
-            self._consider_snapshot()
+        return None, diagnostics
+
+    def step(self, net_id: int) -> StepResult:
+        self._require_reset()
+        if type(net_id) is not int or net_id not in self._eligible or self._done:
+            raise ValueError(f"net is not eligible: {net_id!r}")
+        self._check_budget()
+        if self._done:
+            return StepResult(self.observation(), {"net_id": net_id, "engine_status": "not_called"}, True)
+        if self._phase == "initial":
+            self._in_step = True
+            try:
+                route, diagnostics = self._build_route(net_id)
+                if route is not None:
+                    self._install(net_id, route)
+                    self._consider_snapshot()
+            finally:
+                self._in_step = False
+            diagnostics.update(route_installed=route is not None, rolled_back=False)
+            self._eligible.remove(net_id)
+        else:
+            group = self._select_group(net_id)
+            diagnostics = self._repair_group(group)
+            if diagnostics["accepted"]:
+                for nid in group:
+                    self._repair_failures[nid] = 0
+                self._exhausted_seeds.clear()
+                self._eligible.difference_update(group)
+                self._eligible.intersection_update(self._affected_nets())
+            else:
+                self._repair_failures[net_id] += 1
+                self._eligible.discard(net_id)
+                if len(group) == len(self._nets) and self._repair_failures[net_id] >= 10:
+                    self._exhausted_seeds.add(net_id)
+        diagnostics.update(net_id=net_id, pass_number=self._pass)
         if not self._done and not self._eligible:
             self._end_pass()
         self._check_budget()
