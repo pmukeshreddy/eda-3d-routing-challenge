@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "master_seed": 20261003,
+  "counts": {"train": 12, "val": 4, "test": 4},
+  "limits": {"total_seconds": 300, "case_seconds": 20, "attempt_seconds": 15, "case_retries": 2},
+  "defaults": {
+    "layers": 6, "center_delay": 1, "layer_slope": 1, "via_delay": 3,
+    "cell_min": 2, "cell_max": 3, "pins_per_cell": 3, "cell_gap": 0,
+    "max_attempts": 2, "baseline_order": "bbox_desc", "router": "negotiated"
+  },
+  "families": {
+    "sparse": {
+      "width": [20, 28], "height": [20, 28], "n_nets": [8, 16],
+      "max_fanout": [3, 5], "p_twopin": [0.65, 0.85],
+      "frac_local": [0.5, 0.85], "frac_cross": [0.2, 0.5], "router": "baseline"
+    },
+    "mixed": {
+      "width": [22, 30], "height": [22, 30], "n_nets": [24, 45],
+      "max_fanout": [4, 7], "p_twopin": [0.4, 0.7],
+      "frac_local": [0.25, 0.65], "frac_cross": [0.25, 0.65]
+    },
+    "dense": {
+      "width": [24, 30], "height": [24, 30], "n_nets": [62, 78],
+      "max_fanout": [5, 7], "p_twopin": [0.5, 0.7],
+      "frac_local": [0.08, 0.18], "frac_cross": [0.35, 0.6],
+      "cell_min": 2, "cell_max": 2, "pins_per_cell": 2, "cell_gap": 0
+    },
+    "branching": {
+      "width": [24, 32], "height": [24, 32], "n_nets": [16, 26],
+      "max_fanout": [6, 9], "p_twopin": [0.05, 0.25],
+      "frac_local": [0.25, 0.6], "frac_cross": [0.4, 0.75]
+    }
+  }
+}

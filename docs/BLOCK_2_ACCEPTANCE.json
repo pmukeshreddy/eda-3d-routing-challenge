@@ -1,0 +1,69 @@
+{
+  "instance": "case_05",
+  "status": "failure",
+  "legal": false,
+  "total_delay": null,
+  "runtime_s": 41.84563308395445,
+  "passes": 50,
+  "passes_completed": 50,
+  "engine_calls": 1021,
+  "expansions_charged": 7149570,
+  "termination_reason": "pass_budget",
+  "missing_net_ids": [],
+  "conflict_vertices": [
+    {
+      "vertex": [
+        17,
+        16,
+        2
+      ],
+      "nets": [
+        12,
+        29
+      ]
+    },
+    {
+      "vertex": [
+        18,
+        20,
+        3
+      ],
+      "nets": [
+        8,
+        28
+      ]
+    },
+    {
+      "vertex": [
+        13,
+        15,
+        4
+      ],
+      "nets": [
+        26,
+        69
+      ]
+    }
+  ],
+  "conflict_edges": [],
+  "failed_calls": [],
+  "budget": {
+    "limits": {
+      "max_seconds": 180.0,
+      "max_passes": 50,
+      "max_calls": 5000,
+      "max_expansions": 200000000,
+      "max_expansions_per_call": 1000000,
+      "max_call_seconds": 10.0
+    },
+    "elapsed_s": 41.84563308395445,
+    "remaining_seconds": 138.15436691604555,
+    "engine_calls": 1021,
+    "remaining_calls": 3979,
+    "expansions_charged": 7149570,
+    "remaining_expansions": 192850430,
+    "remaining_passes": 0
+  },
+  "output": null,
+  "wall_runtime_s": 41.85262004105607
+}

@@ -16,3 +16,5 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+/m3d/_wire_native*.so
+/m3d/_wire_native*.pyd

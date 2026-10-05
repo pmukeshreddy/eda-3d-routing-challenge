@@ -1,0 +1,944 @@
+{
+  "status": "complete",
+  "accepted": 20,
+  "target": 20,
+  "rejected_attempts": 0,
+  "shortfalls": [],
+  "total_generation_seconds": 40.876089541998226,
+  "runs": [
+    {
+      "cap_reached": false,
+      "cap_seconds": 300,
+      "elapsed_s": 40.876089541998226
+    }
+  ],
+  "coverage": {
+    "test": {
+      "branching": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.7307692307692307,
+            0.7307692307692307
+          ],
+          "destination_count_max": [
+            6,
+            6
+          ],
+          "destination_count_mean": [
+            3.1538461538461537,
+            3.1538461538461537
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            25,
+            25
+          ],
+          "mean_driver_sink_manhattan": [
+            23.79268292682927,
+            23.79268292682927
+          ],
+          "multidestination_fraction": [
+            0.7307692307692307,
+            0.7307692307692307
+          ],
+          "n_nets": [
+            26,
+            26
+          ],
+          "net_density_per_xy_vertex": [
+            0.0325,
+            0.0325
+          ],
+          "width": [
+            32,
+            32
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.6991111828955774,
+            0.6991111828955774
+          ],
+          "frac_local": [
+            0.35097804810008565,
+            0.35097804810008565
+          ],
+          "height": [
+            25,
+            25
+          ],
+          "max_fanout": [
+            6,
+            6
+          ],
+          "n_nets": [
+            26,
+            26
+          ],
+          "width": [
+            32,
+            32
+          ]
+        },
+        "target": 1
+      },
+      "dense": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.5538461538461539,
+            0.5538461538461539
+          ],
+          "destination_count_max": [
+            5,
+            5
+          ],
+          "destination_count_mean": [
+            1.7846153846153847,
+            1.7846153846153847
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            29,
+            29
+          ],
+          "mean_driver_sink_manhattan": [
+            25.267241379310345,
+            25.267241379310345
+          ],
+          "multidestination_fraction": [
+            0.4,
+            0.4
+          ],
+          "n_nets": [
+            65,
+            65
+          ],
+          "net_density_per_xy_vertex": [
+            0.08004926108374384,
+            0.08004926108374384
+          ],
+          "width": [
+            28,
+            28
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.5799172939539947,
+            0.5799172939539947
+          ],
+          "frac_local": [
+            0.17364965980530808,
+            0.17364965980530808
+          ],
+          "height": [
+            29,
+            29
+          ],
+          "max_fanout": [
+            5,
+            5
+          ],
+          "n_nets": [
+            65,
+            65
+          ],
+          "width": [
+            28,
+            28
+          ]
+        },
+        "target": 1
+      },
+      "mixed": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.7741935483870968,
+            0.7741935483870968
+          ],
+          "destination_count_max": [
+            5,
+            5
+          ],
+          "destination_count_mean": [
+            2.032258064516129,
+            2.032258064516129
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            25,
+            25
+          ],
+          "mean_driver_sink_manhattan": [
+            15.984126984126984,
+            15.984126984126984
+          ],
+          "multidestination_fraction": [
+            0.41935483870967744,
+            0.41935483870967744
+          ],
+          "n_nets": [
+            31,
+            31
+          ],
+          "net_density_per_xy_vertex": [
+            0.04133333333333333,
+            0.04133333333333333
+          ],
+          "width": [
+            30,
+            30
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.5975353795926702,
+            0.5975353795926702
+          ],
+          "frac_local": [
+            0.5305054864901724,
+            0.5305054864901724
+          ],
+          "height": [
+            25,
+            25
+          ],
+          "max_fanout": [
+            5,
+            5
+          ],
+          "n_nets": [
+            31,
+            31
+          ],
+          "width": [
+            30,
+            30
+          ]
+        },
+        "target": 1
+      },
+      "sparse": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.4375,
+            0.4375
+          ],
+          "destination_count_max": [
+            2,
+            2
+          ],
+          "destination_count_mean": [
+            1.125,
+            1.125
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            27,
+            27
+          ],
+          "mean_driver_sink_manhattan": [
+            13.166666666666666,
+            13.166666666666666
+          ],
+          "multidestination_fraction": [
+            0.125,
+            0.125
+          ],
+          "n_nets": [
+            16,
+            16
+          ],
+          "net_density_per_xy_vertex": [
+            0.026936026936026935,
+            0.026936026936026935
+          ],
+          "width": [
+            22,
+            22
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.3117604269281859,
+            0.3117604269281859
+          ],
+          "frac_local": [
+            0.755499815092806,
+            0.755499815092806
+          ],
+          "height": [
+            27,
+            27
+          ],
+          "max_fanout": [
+            5,
+            5
+          ],
+          "n_nets": [
+            16,
+            16
+          ],
+          "width": [
+            22,
+            22
+          ]
+        },
+        "target": 1
+      }
+    },
+    "train": {
+      "branching": {
+        "accepted": 3,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.4,
+            0.6875
+          ],
+          "destination_count_max": [
+            6,
+            9
+          ],
+          "destination_count_mean": [
+            4.125,
+            4.391304347826087
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            24,
+            28
+          ],
+          "mean_driver_sink_manhattan": [
+            14.792079207920793,
+            21.075757575757574
+          ],
+          "multidestination_fraction": [
+            0.85,
+            0.9565217391304348
+          ],
+          "n_nets": [
+            16,
+            23
+          ],
+          "net_density_per_xy_vertex": [
+            0.022792022792022793,
+            0.026497695852534562
+          ],
+          "width": [
+            27,
+            32
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.4794064448855286,
+            0.6297191395039652
+          ],
+          "frac_local": [
+            0.27455006445741353,
+            0.5690491010423349
+          ],
+          "height": [
+            24,
+            28
+          ],
+          "max_fanout": [
+            6,
+            9
+          ],
+          "n_nets": [
+            16,
+            23
+          ],
+          "width": [
+            27,
+            32
+          ]
+        },
+        "target": 3
+      },
+      "dense": {
+        "accepted": 3,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.3561643835616438,
+            0.64
+          ],
+          "destination_count_max": [
+            5,
+            7
+          ],
+          "destination_count_mean": [
+            1.8,
+            1.9852941176470589
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            27,
+            30
+          ],
+          "mean_driver_sink_manhattan": [
+            23.20740740740741,
+            26.4
+          ],
+          "multidestination_fraction": [
+            0.29411764705882354,
+            0.3287671232876712
+          ],
+          "n_nets": [
+            68,
+            75
+          ],
+          "net_density_per_xy_vertex": [
+            0.09018567639257294,
+            0.10013717421124829
+          ],
+          "width": [
+            26,
+            27
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.4270915883287416,
+            0.5710678669030251
+          ],
+          "frac_local": [
+            0.09172516207206971,
+            0.14104034547730224
+          ],
+          "height": [
+            27,
+            30
+          ],
+          "max_fanout": [
+            5,
+            7
+          ],
+          "n_nets": [
+            68,
+            75
+          ],
+          "width": [
+            26,
+            27
+          ]
+        },
+        "target": 3
+      },
+      "mixed": {
+        "accepted": 3,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.15,
+            0.5483870967741935
+          ],
+          "destination_count_max": [
+            6,
+            7
+          ],
+          "destination_count_mean": [
+            1.525,
+            2.838709677419355
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            22,
+            25
+          ],
+          "mean_driver_sink_manhattan": [
+            12.573770491803279,
+            21.933333333333334
+          ],
+          "multidestination_fraction": [
+            0.175,
+            0.5161290322580645
+          ],
+          "n_nets": [
+            31,
+            40
+          ],
+          "net_density_per_xy_vertex": [
+            0.04696969696969697,
+            0.0641025641025641
+          ],
+          "width": [
+            26,
+            30
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.28571821103305794,
+            0.5577977309562534
+          ],
+          "frac_local": [
+            0.337323096466315,
+            0.5591531695748684
+          ],
+          "height": [
+            22,
+            25
+          ],
+          "max_fanout": [
+            7,
+            7
+          ],
+          "n_nets": [
+            31,
+            40
+          ],
+          "width": [
+            26,
+            30
+          ]
+        },
+        "target": 3
+      },
+      "sparse": {
+        "accepted": 3,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.2222222222222222,
+            0.5833333333333334
+          ],
+          "destination_count_max": [
+            3,
+            5
+          ],
+          "destination_count_mean": [
+            1.4375,
+            1.6666666666666667
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            20,
+            25
+          ],
+          "mean_driver_sink_manhattan": [
+            15.384615384615385,
+            20.565217391304348
+          ],
+          "multidestination_fraction": [
+            0.16666666666666666,
+            0.2222222222222222
+          ],
+          "n_nets": [
+            9,
+            16
+          ],
+          "net_density_per_xy_vertex": [
+            0.01607142857142857,
+            0.023703703703703703
+          ],
+          "width": [
+            23,
+            28
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.29363042695731284,
+            0.42459903170344454
+          ],
+          "frac_local": [
+            0.5142484388595938,
+            0.7373547921704697
+          ],
+          "height": [
+            20,
+            25
+          ],
+          "max_fanout": [
+            4,
+            5
+          ],
+          "n_nets": [
+            9,
+            16
+          ],
+          "width": [
+            23,
+            28
+          ]
+        },
+        "target": 3
+      }
+    },
+    "val": {
+      "branching": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.7368421052631579,
+            0.7368421052631579
+          ],
+          "destination_count_max": [
+            4,
+            4
+          ],
+          "destination_count_mean": [
+            2.263157894736842,
+            2.263157894736842
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            24,
+            24
+          ],
+          "mean_driver_sink_manhattan": [
+            15.511627906976743,
+            15.511627906976743
+          ],
+          "multidestination_fraction": [
+            0.7894736842105263,
+            0.7894736842105263
+          ],
+          "n_nets": [
+            19,
+            19
+          ],
+          "net_density_per_xy_vertex": [
+            0.03298611111111111,
+            0.03298611111111111
+          ],
+          "width": [
+            24,
+            24
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.723454038016593,
+            0.723454038016593
+          ],
+          "frac_local": [
+            0.31647310177527976,
+            0.31647310177527976
+          ],
+          "height": [
+            24,
+            24
+          ],
+          "max_fanout": [
+            6,
+            6
+          ],
+          "n_nets": [
+            19,
+            19
+          ],
+          "width": [
+            24,
+            24
+          ]
+        },
+        "target": 1
+      },
+      "dense": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.5555555555555556,
+            0.5555555555555556
+          ],
+          "destination_count_max": [
+            6,
+            6
+          ],
+          "destination_count_mean": [
+            2.3492063492063493,
+            2.3492063492063493
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            29,
+            29
+          ],
+          "mean_driver_sink_manhattan": [
+            25.945945945945947,
+            25.945945945945947
+          ],
+          "multidestination_fraction": [
+            0.49206349206349204,
+            0.49206349206349204
+          ],
+          "n_nets": [
+            63,
+            63
+          ],
+          "net_density_per_xy_vertex": [
+            0.07241379310344828,
+            0.07241379310344828
+          ],
+          "width": [
+            30,
+            30
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.5112084197035265,
+            0.5112084197035265
+          ],
+          "frac_local": [
+            0.1521580791244299,
+            0.1521580791244299
+          ],
+          "height": [
+            29,
+            29
+          ],
+          "max_fanout": [
+            6,
+            6
+          ],
+          "n_nets": [
+            63,
+            63
+          ],
+          "width": [
+            30,
+            30
+          ]
+        },
+        "target": 1
+      },
+      "mixed": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.3953488372093023,
+            0.3953488372093023
+          ],
+          "destination_count_max": [
+            5,
+            5
+          ],
+          "destination_count_mean": [
+            2.255813953488372,
+            2.255813953488372
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            27,
+            27
+          ],
+          "mean_driver_sink_manhattan": [
+            19.701030927835053,
+            19.701030927835053
+          ],
+          "multidestination_fraction": [
+            0.5116279069767442,
+            0.5116279069767442
+          ],
+          "n_nets": [
+            43,
+            43
+          ],
+          "net_density_per_xy_vertex": [
+            0.056878306878306875,
+            0.056878306878306875
+          ],
+          "width": [
+            28,
+            28
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.5239022223697731,
+            0.5239022223697731
+          ],
+          "frac_local": [
+            0.5574423492277008,
+            0.5574423492277008
+          ],
+          "height": [
+            27,
+            27
+          ],
+          "max_fanout": [
+            5,
+            5
+          ],
+          "n_nets": [
+            43,
+            43
+          ],
+          "width": [
+            28,
+            28
+          ]
+        },
+        "target": 1
+      },
+      "sparse": {
+        "accepted": 1,
+        "effective_ranges": {
+          "cross_die_fraction": [
+            0.15384615384615385,
+            0.15384615384615385
+          ],
+          "destination_count_max": [
+            3,
+            3
+          ],
+          "destination_count_mean": [
+            1.5384615384615385,
+            1.5384615384615385
+          ],
+          "destination_count_min": [
+            1,
+            1
+          ],
+          "height": [
+            21,
+            21
+          ],
+          "mean_driver_sink_manhattan": [
+            7.75,
+            7.75
+          ],
+          "multidestination_fraction": [
+            0.3076923076923077,
+            0.3076923076923077
+          ],
+          "n_nets": [
+            13,
+            13
+          ],
+          "net_density_per_xy_vertex": [
+            0.026915113871635612,
+            0.026915113871635612
+          ],
+          "width": [
+            23,
+            23
+          ]
+        },
+        "enlarged_cases": 0,
+        "rejected_attempts": 0,
+        "requested_ranges": {
+          "frac_cross": [
+            0.28141362664846825,
+            0.28141362664846825
+          ],
+          "frac_local": [
+            0.7210449203089933,
+            0.7210449203089933
+          ],
+          "height": [
+            21,
+            21
+          ],
+          "max_fanout": [
+            3,
+            3
+          ],
+          "n_nets": [
+            13,
+            13
+          ],
+          "width": [
+            23,
+            23
+          ]
+        },
+        "target": 1
+      }
+    }
+  },
+  "audit": {
+    "all_legal": true,
+    "checked_certificates": 20,
+    "duplicate_count": 0,
+    "reference_delays_match": true,
+    "released_inputs_checked": 45
+  },
+  "configuration_file": "configs/routing_data_v1.json",
+  "dataset_directory": "build/data/routing_v1",
+  "source_sha256": "d47faaec626b0c93820e735a6f6d0337fd427fe5ba44c8d4387efc69d45d1b9f",
+  "focused_checks": {
+    "passed": 8,
+    "elapsed_s": 5.43,
+    "outer_cap_s": 60
+  },
+  "integration": {
+    "case": "train-mixed-00000",
+    "empty_reset": true,
+    "selected_net": 0,
+    "engine_status": "success",
+    "route_installed": true,
+    "engine_calls": 1,
+    "reward_metadata_separate_from_instance": {
+      "case_id": "train-mixed-00000",
+      "split": "train",
+      "family": "mixed",
+      "reference_total_delay": 5141,
+      "geometry_hash": "f5993b0c1a1f7c12f72ca281c28977afc00349a2c5d7fd9aa36b54b34ff87bb8",
+      "full_instance_hash": "954735426797f478a40aec02c6ed77ab5e7162fd68ae0f2ad16d0490f9db00b2"
+    },
+    "scope": "one-action data integration check; not Block 2 hard-tier acceptance"
+  },
+  "block_2_acceptance": "Still open: case_05 had 3 vertex conflicts after 50 passes; unchanged."
+}
