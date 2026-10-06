@@ -210,6 +210,22 @@ def cmd_visualize(args: argparse.Namespace) -> int:
 
 
 def cmd_run_suite(args: argparse.Namespace) -> int:
+    if os.path.isdir(args.out_dir) and os.listdir(args.out_dir):
+        raise ValueError("run-suite output directory must be empty to prevent stale solutions")
+    policy = None
+    if args.router == "negotiated_rl":
+        if not args.policy:
+            raise ValueError("--policy is required for negotiated_rl")
+        if args.policy.endswith('.pt'):
+            import torch
+            from .ppo import load_checkpoint, NeuralSelector
+            torch.set_num_threads(1)
+            policy, _ = load_checkpoint(args.policy)
+            selector_class = NeuralSelector
+        else:
+            from .rl_policy import LinearPolicy, PolicySelector
+            policy = LinearPolicy.load(args.policy)
+            selector_class = PolicySelector
     man = _load_manifest(args.suite)
     os.makedirs(args.out_dir, exist_ok=True)
     runtimes: Dict[str, float] = {}
@@ -217,7 +233,10 @@ def cmd_run_suite(args: argparse.Namespace) -> int:
     for c in man["cases"]:
         inst = Instance.load(os.path.join(args.suite, c["instance_file"]))
         t0 = time.time()
-        if args.router == "negotiated":
+        if args.router == "negotiated_rl":
+            from .negotiated import route_negotiated
+            sub, _ = route_negotiated(inst, selector=selector_class(policy))
+        elif args.router == "negotiated":
             from .negotiated import route_negotiated
             sub, _ = route_negotiated(inst)
         elif args.router == "negotiated_fast":
@@ -636,7 +655,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     rs = sub.add_parser("run-suite", help="route every case with a router, timing each")
     rs.add_argument("--suite", default="benchmarks")
-    rs.add_argument("--router", default="baseline", choices=["baseline", "negotiated", "negotiated_fast", "negotiated2"])
+    rs.add_argument("--router", default="baseline", choices=["baseline", "negotiated", "negotiated_fast", "negotiated2", "negotiated_rl"])
+    rs.add_argument("--policy", default=None, help="trained .pt or JSON policy for negotiated_rl")
     rs.add_argument("--out-dir", required=True, dest="out_dir")
     rs.set_defaults(func=cmd_run_suite)
 

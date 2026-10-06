@@ -18,3 +18,6 @@ dist/
 *.egg-info/
 /m3d/_wire_native*.so
 /m3d/_wire_native*.pyd
+
+# Generated RL datasets, logs, and model checkpoints
+/experiments/

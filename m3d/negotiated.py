@@ -21,7 +21,7 @@ from __future__ import annotations
 import heapq
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from .grid import Grid, edge_key
 from .model import Instance, NetRoute, Submission
@@ -39,7 +39,8 @@ class NegStats:
 class Negotiated:
     def __init__(self, inst: Instance, max_iters: int = 50,
                  pres_fac0: float = 0.5, pres_mult: float = 1.7,
-                 hist_fac: float = 0.5, order: str = "bbox_desc"):
+                 hist_fac: float = 0.5, order: str = "bbox_desc",
+                 selector: Optional[Callable] = None):
         self.inst = inst
         self.g = Grid(inst)
         self.max_iters = max_iters
@@ -47,6 +48,10 @@ class Negotiated:
         self.pres_mult = pres_mult
         self.hist_fac = hist_fac
         self.order = order
+        # Optional controller: (router, eligible_ids, pressure, iteration) -> net id.
+        # The initial pass, costs and per-round history schedule stay unchanged.
+        self.selector = selector
+        self.reroute_counts: Dict[int, int] = defaultdict(int)
 
         self.pin_vid = {p.id: self.g.vid(p.vertex()) for p in inst.pins}
         self.net_pins = {n.id: [self.pin_vid[p] for p in n.pins()] for n in inst.nets}
@@ -159,14 +164,19 @@ class Negotiated:
                 self.h_e[e] += self.hist_fac * (len(self.owners_e[e]) - 1)
                 affected |= self.owners_e[e]
             pres_fac = min(pres_fac * self.pres_mult, 1e6)
-            for nid in order:
-                if nid not in affected:
-                    continue
+            pending = [nid for nid in order if nid in affected]
+            while pending:
+                nid = (pending[0] if self.selector is None else
+                       self.selector(self, tuple(pending), pres_fac, it))
+                if nid not in pending:
+                    raise ValueError("selector must return an eligible net id")
+                pending.remove(nid)
                 self._remove(nid)
                 r = self._route_net(nid, pres_fac)
                 if r is None:
                     return None, NegStats(it, -1, False)
                 self._add(nid, *r)
+                self.reroute_counts[nid] += 1
 
         ov, oe = self._overused()
         success = not ov and not oe
