@@ -336,6 +336,40 @@ python -m m3d.cli info --case benchmarks/case_10.json
 python -m unittest discover -s tests -t .
 ```
 
+### Post-legalization delay optimization
+
+`negotiated_opt` starts with the standard negotiated router, then improves its
+legal solution with coordinated group rerouting. It scores physical driver-to-sink
+delay, keeps outside nets fixed, and retains the best legal solution across
+annealing moves and timeouts. The native search also polishes legal candidates
+and periodically attempts a larger warm repair.
+
+```bash
+python -m m3d.cli run-suite --suite benchmarks_hard --router negotiated_opt \
+  --time-budget 60 --out-dir artifacts/optimized-hard
+python -m m3d.cli score-suite --suite benchmarks_hard \
+  --submission-dir artifacts/optimized-hard \
+  --runtimes artifacts/optimized-hard/runtime.json
+```
+
+Use `--suite benchmarks_designs` with a separate empty output directory for the
+real-design cases. Each run writes solutions, `runtime.json`, and
+`optimizer_stats.json`. The default optimization budget is 60 seconds per case,
+excluding the initial negotiated solve, native setup, and output checks. A final
+cleanup can finish before the cap. Zero skips optimization.
+
+A C++17 compiler (`clang++` or `g++`) enables the native backend, compiled into a
+temporary directory automatically. Without a compiler, the portable Python
+fallback runs; it has a different search policy and performance. No PyTorch or
+training is required. Seed 0 is the default. Fixed completed work replays on the
+same toolchain; wall-clock cutoffs can change the work completed and final routes.
+
+Measured native results with the 60-second cap: **hard 1.2328 (9/9 legal)** and
+**designs 1.2379 (3/3 legal)**, versus baseline 1.0000. Every saved solution was
+verified with the independent checker. These measurements do not demonstrate a
+1.5–1.7 aggregate score. [Per-case delays, runtimes, and source hashes](docs/negotiated_opt_results.json)
+record the run; scratch experiments and earlier optimizer versions are excluded.
+
 A `Makefile` wraps the common commands: `make generate`, `make baseline`,
 `make score-example`, `make visualize`, `make test`.
 

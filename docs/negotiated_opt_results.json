@@ -1,0 +1,130 @@
+{
+  "router": "negotiated_opt",
+  "seed": 0,
+  "optimization_budget_s_per_case": 60,
+  "runtime_scope": "Initial unchanged negotiated solve, native setup, optimization with a 60 s maximum search budget, and internal verification; hard and designs tier processes ran concurrently, as in the previous run. Final cleanup can finish before the cap.",
+  "tiers": {
+    "hard": {
+      "baseline_aggregate": 1.0,
+      "previous_optimizer_aggregate": 1.1860850686617612,
+      "aggregate_score": 1.2328077417955832,
+      "legal_cases": 9,
+      "total_cases": 9,
+      "cases": [
+        {
+          "case": "case_01",
+          "baseline_delay": 11938,
+          "optimized_delay": 9404,
+          "reduction_pct": 21.226336069693417,
+          "legal": true,
+          "runtime_s": 62.94
+        },
+        {
+          "case": "case_02",
+          "baseline_delay": 18910,
+          "optimized_delay": 14900,
+          "reduction_pct": 21.205711263881543,
+          "legal": true,
+          "runtime_s": 63.526
+        },
+        {
+          "case": "case_03",
+          "baseline_delay": 14724,
+          "optimized_delay": 12070,
+          "reduction_pct": 18.02499320836729,
+          "legal": true,
+          "runtime_s": 64.086
+        },
+        {
+          "case": "case_04",
+          "baseline_delay": 18077,
+          "optimized_delay": 14575,
+          "reduction_pct": 19.37268352049566,
+          "legal": true,
+          "runtime_s": 66.02
+        },
+        {
+          "case": "case_05",
+          "baseline_delay": 21051,
+          "optimized_delay": 17117,
+          "reduction_pct": 18.687948315994486,
+          "legal": true,
+          "runtime_s": 66.995
+        },
+        {
+          "case": "case_06",
+          "baseline_delay": 27134,
+          "optimized_delay": 22408,
+          "reduction_pct": 17.41726247512346,
+          "legal": true,
+          "runtime_s": 69.775
+        },
+        {
+          "case": "case_07",
+          "baseline_delay": 31341,
+          "optimized_delay": 24747,
+          "reduction_pct": 21.039532880252708,
+          "legal": true,
+          "runtime_s": 72.738
+        },
+        {
+          "case": "case_08",
+          "baseline_delay": 30886,
+          "optimized_delay": 25104,
+          "reduction_pct": 18.720455869973453,
+          "legal": true,
+          "runtime_s": 74.93
+        },
+        {
+          "case": "case_09",
+          "baseline_delay": 27802,
+          "optimized_delay": 23908,
+          "reduction_pct": 14.006186605280192,
+          "legal": true,
+          "runtime_s": 75.314
+        }
+      ]
+    },
+    "designs": {
+      "baseline_aggregate": 1.0,
+      "previous_optimizer_aggregate": 1.1412290520489643,
+      "aggregate_score": 1.2378635486784406,
+      "legal_cases": 3,
+      "total_cases": 3,
+      "cases": [
+        {
+          "case": "ctrl",
+          "baseline_delay": 73148,
+          "optimized_delay": 58208,
+          "reduction_pct": 20.424345163230704,
+          "legal": true,
+          "runtime_s": 180.385
+        },
+        {
+          "case": "int2float",
+          "baseline_delay": 152284,
+          "optimized_delay": 107496,
+          "reduction_pct": 29.410837645451913,
+          "legal": true,
+          "runtime_s": 286.843
+        },
+        {
+          "case": "router",
+          "baseline_delay": 82491,
+          "optimized_delay": 77423,
+          "reduction_pct": 6.143700524905748,
+          "legal": true,
+          "runtime_s": 264.666
+        }
+      ]
+    }
+  },
+  "measurement_platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+  "measurement_python": "3.13.5 (main, Jun 11 2025, 15:36:57) [Clang 17.0.0 (clang-1700.0.13.3)]",
+  "source_sha256": {
+    "m3d/negotiated_opt.py": "6220224f72575ea70b952df98437a26df79b8c49606401fef9733e79ae91f483",
+    "m3d/negotiated_native.py": "263b6a80d5ccffda1b495f4dfdf6f22d7296580a9b9f1a85f56966198ee79acc",
+    "m3d/native/negotiated_opt.cpp": "1918989758684be40b0865e238e75140d0bc95138cf6c22ebb8aa0af83151975"
+  },
+  "verification": "All 12 saved outputs independently checked for legality and recomputed delay; original benchmark, checker, scorer and baseline router hashes unchanged."
+}

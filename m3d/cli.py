@@ -212,33 +212,25 @@ def cmd_visualize(args: argparse.Namespace) -> int:
 def cmd_run_suite(args: argparse.Namespace) -> int:
     if os.path.isdir(args.out_dir) and os.listdir(args.out_dir):
         raise ValueError("run-suite output directory must be empty to prevent stale solutions")
-    policy = None
-    if args.router == "negotiated_rl":
-        if not args.policy:
-            raise ValueError("--policy is required for negotiated_rl")
-        if args.policy.endswith('.pt'):
-            import torch
-            from .ppo import load_checkpoint, NeuralSelector
-            torch.set_num_threads(1)
-            policy, _ = load_checkpoint(args.policy)
-            selector_class = NeuralSelector
-        else:
-            from .rl_policy import LinearPolicy, PolicySelector
-            policy = LinearPolicy.load(args.policy)
-            selector_class = PolicySelector
     man = _load_manifest(args.suite)
     os.makedirs(args.out_dir, exist_ok=True)
     runtimes: Dict[str, float] = {}
+    optimizer_stats = {}
     ok = True
+    written = 0
     for c in man["cases"]:
         inst = Instance.load(os.path.join(args.suite, c["instance_file"]))
         t0 = time.time()
-        if args.router == "negotiated_rl":
-            from .negotiated import route_negotiated
-            sub, _ = route_negotiated(inst, selector=selector_class(policy))
-        elif args.router == "negotiated":
+        if args.router == "negotiated":
             from .negotiated import route_negotiated
             sub, _ = route_negotiated(inst)
+        elif args.router == "negotiated_opt":
+            from dataclasses import asdict
+            from .negotiated_opt import route_negotiated_opt
+            sub, stats = route_negotiated_opt(inst, time_budget=args.time_budget)
+            optimizer_stats[inst.name] = asdict(stats)
+            with open(os.path.join(args.out_dir, "optimizer_stats.json"), "w") as fh:
+                json.dump(optimizer_stats, fh, indent=1)
         elif args.router == "negotiated_fast":
             from .negotiated import route_negotiated
             sub, _ = route_negotiated(inst, max_iters=25, pres_mult=2.3, order="id")
@@ -264,12 +256,14 @@ def cmd_run_suite(args: argparse.Namespace) -> int:
             continue
         res = check(inst, sub)
         sub.save(os.path.join(args.out_dir, f"{inst.name}.sol.json"))
+        written += 1
         print(f"  {inst.name}: legal={res.legal} total={res.total_delay} "
               f"{args.router} {dt:.2f}s")
         ok = ok and res.legal
     with open(os.path.join(args.out_dir, "runtime.json"), "w") as fh:
         json.dump(runtimes, fh, indent=1)
-    print(f"wrote {len(man['cases'])} solutions + runtime.json -> {args.out_dir}")
+    print(f"wrote {written}/{len(man['cases'])} solutions + runtime.json "
+          f"-> {args.out_dir}")
     return 0 if ok else 3
 
 
@@ -589,6 +583,13 @@ def cmd_info(args: argparse.Namespace) -> int:
     return 0
 
 
+def _time_budget(value: str) -> float:
+    budget = float(value)
+    if not math.isfinite(budget) or budget < 0:
+        raise argparse.ArgumentTypeError("time budget must be finite and non-negative")
+    return budget
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="m3d", description="M3D routing challenge toolkit")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -655,8 +656,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     rs = sub.add_parser("run-suite", help="route every case with a router, timing each")
     rs.add_argument("--suite", default="benchmarks")
-    rs.add_argument("--router", default="baseline", choices=["baseline", "negotiated", "negotiated_fast", "negotiated2", "negotiated_rl"])
-    rs.add_argument("--policy", default=None, help="trained .pt or JSON policy for negotiated_rl")
+    rs.add_argument("--router", default="baseline", choices=["baseline", "negotiated", "negotiated_fast", "negotiated2", "negotiated_opt"])
+    rs.add_argument("--time-budget", type=_time_budget, default=60.0,
+                    help="post-legalization optimization seconds per case for negotiated_opt (default: 60)")
     rs.add_argument("--out-dir", required=True, dest="out_dir")
     rs.set_defaults(func=cmd_run_suite)
 

@@ -16,5 +16,8 @@ __pycache__/
 build/
 dist/
 *.egg-info/
-# Generated RL datasets, logs, and model checkpoints
+# Local experiments and optimizer benchmark output
 /experiments/
+
+/artifacts/
+/docs/superpowers/
